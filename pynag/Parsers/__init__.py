@@ -1126,7 +1126,7 @@ class Config(object):
             :py:class:`ParserError` if item is not a dict
         """
         if not isinstance(item, dict):
-            raise ParserError("%s is not a dictionary\n" % item)
+            raise ParserError("%s: %s is not a dictionary\n" % (key, item))
             # return []
         if not key in item:
             return []
@@ -1134,10 +1134,10 @@ class Config(object):
         return_list = []
 
         if item[key].find(",") != -1:
-            for name in item[key].split(","):
-                return_list.append(name)
+            for name in [x for x in [y.strip() for y in item[key].split(",")] if x != '']:
+                return_list.append(name.strip())
         else:
-            return_list.append(item[key])
+            return_list.append(item[key].strip())
 
         # Alphabetize
         return_list.sort()
@@ -1996,8 +1996,11 @@ class Config(object):
         # Hostgroups
         if "hostgroup_name" in item:
             for hostgroup_name in self._get_list(item, 'hostgroup_name'):
-                if hostgroup_name[0] != "!":
-                    active_hosts.extend(self._get_list(self.get_hostgroup(hostgroup_name), 'members'))
+                try:
+                    if hostgroup_name[0] != "!":
+                        active_hosts.extend(self._get_list(self.get_hostgroup(hostgroup_name), 'members'))
+                except ParserError, e:
+                    raise ParserError("hostgroup %s has no members" % hostgroup_name)
 
         # Host Names
         if "host_name" in item:
